@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "artifact-engine.core/artifact-contracts/metadata/artifact-metadata-schema.json",
+  "title": "Artifact Metadata Schema",
+  "description": "Universal frontmatter shape every artifact produced by the engine must conform to.",
+  "type": "object",
+  "required": [
+    "contract",
+    "producer",
+    "producer_run_id",
+    "feature",
+    "generated_at",
+    "checksum"
+  ],
+  "properties": {
+    "contract": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*-contract@\\d+\\.\\d+$",
+      "description": "Contract id with semver, e.g., 'business-flow-contract@1.0'"
+    },
+    "producer": {
+      "type": "string",
+      "enum": [
+        "business-flow-intelligence",
+        "system-intelligence",
+        "risk-intelligence",
+        "test-strategy-intelligence",
+        "api-testing-intelligence",
+        "e2e-intelligence",
+        "regression-intelligence",
+        "orchestrator"
+      ]
+    },
+    "producer_run_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]+-\\d{8}T\\d{6}Z$"
+    },
+    "feature": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]+$",
+      "minLength": 3,
+      "maxLength": 64
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp"
+    },
+    "checksum": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "sources": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Paths under input/ or shared-artifacts/ that informed this artifact"
+    },
+    "inputs_consumed": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "evidence_coverage": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "gaps": { "type": "integer", "minimum": 0 },
+    "contradictions": { "type": "integer", "minimum": 0 },
+    "domain_pack": { "type": "string" },
+    "mode": {
+      "type": "string",
+      "enum": ["quick", "deep", "enterprise", "regression", "incident"]
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,109 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# OS / editor
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Node / pnpm / yarn
+node_modules/
+.pnpm-store/
+.npm/
+.yarn/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build artifacts
+dist/
+build/
+.coverage/
+coverage/
+*.tsbuildinfo
+
+# Test runtime
+test-results/
+playwright-report/
+blob-report/
+**/.auth/
+
+# Engine-specific runtime (generated, never committed)
+runtime/active-executions/*
+runtime/checkpoints/*
+runtime/logs/*
+runtime/recovery/*
+runtime/snapshots/*
+runtime/execution-cache/*
+runtime/temporary-artifacts/*
+runtime/execution-state/*
+!runtime/active-executions/.gitkeep
+!runtime/checkpoints/.gitkeep
+!runtime/logs/.gitkeep
+!runtime/recovery/.gitkeep
+!runtime/snapshots/.gitkeep
+!runtime/execution-cache/.gitkeep
+!runtime/temporary-artifacts/.gitkeep
+!runtime/execution-state/.gitkeep
+
+# Engine-specific output (per-feature; excluded by default)
+output/business-flow-packages/*
+output/system-analysis-packages/*
+output/risk-analysis-packages/*
+output/test-strategy-packages/*
+output/api-qc-packages/*
+output/e2e-packages/*
+output/regression-packages/*
+output/verification-reports/*
+output/executive-summaries/*
+output/final-reports/*
+!output/**/.gitkeep
+
+# Shared-artifacts (per-feature; excluded by default)
+shared-artifacts/business-flows/*
+shared-artifacts/state-machines/*
+shared-artifacts/risks/*
+shared-artifacts/scenarios/*
+shared-artifacts/system-graphs/*
+shared-artifacts/dependency-maps/*
+shared-artifacts/test-strategies/*
+shared-artifacts/api-analysis/*
+shared-artifacts/e2e-analysis/*
+shared-artifacts/regression-analysis/*
+shared-artifacts/traceability/*
+shared-artifacts/verification/*
+shared-artifacts/reports/*
+!shared-artifacts/**/_index.json
+!shared-artifacts/**/.gitkeep
+
+# Input (user material; usually private)
+input/specs/*
+input/requirements/*
+input/hld/*
+input/lld/*
+input/api-specs/*
+input/ui-specs/*
+input/ui-flows/*
+input/business-documents/*
+input/raw-imports/*
+input/api/*
+!input/**/.gitkeep
+
+# Secrets / env
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.p12
+secrets/
+.auth/
+storageState.json
+
+# Generic
+*.tmp
+*.bak
+generated-artifacts/

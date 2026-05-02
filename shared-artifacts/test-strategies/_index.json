@@ -1,0 +1,14 @@
+{
+  "folder": "shared-artifacts/test-strategies",
+  "kind": "test-strategy",
+  "registered_producer": "test-strategy-intelligence",
+  "registered_consumers": [
+    "api-testing-intelligence",
+    "e2e-intelligence",
+    "regression-intelligence",
+    "reporting-mcp"
+  ],
+  "contract": "test-strategy-contract@^1.0",
+  "retention": { "keep_versions": 5 },
+  "naming": "<feature>.md | <feature>.json | <feature>.system-overview.mmd"
+}

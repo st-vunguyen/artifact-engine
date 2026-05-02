@@ -1,0 +1,28 @@
+{
+  "version": "1.0",
+  "description": "Stub of the semantic icon manifest. Tokens are 'domain.object.state'. Real manifest extends this with SVG paths.",
+  "tokens": {
+    "commerce.cart.empty":         { "icon": "fa-cart", "label": "Empty cart" },
+    "commerce.cart.populated":     { "icon": "fa-cart-arrow-down", "label": "Populated cart" },
+    "commerce.order.pending":      { "icon": "fa-hourglass", "label": "Order pending" },
+    "commerce.order.confirmed":    { "icon": "fa-check-circle", "label": "Order confirmed" },
+    "commerce.order.cancelled":    { "icon": "fa-times-circle", "label": "Order cancelled" },
+    "commerce.order.shipped":      { "icon": "fa-truck", "label": "Shipped" },
+
+    "payment.charge.pending":      { "icon": "fa-spinner", "label": "Charge pending" },
+    "payment.charge.succeeded":    { "icon": "fa-credit-card", "label": "Charge succeeded" },
+    "payment.charge.failed":       { "icon": "fa-credit-card-alt", "label": "Charge failed" },
+    "payment.refund.pending":      { "icon": "fa-undo", "label": "Refund pending" },
+    "payment.refund.succeeded":    { "icon": "fa-undo-alt", "label": "Refund succeeded" },
+
+    "identity.user.registered":    { "icon": "fa-user-plus", "label": "Registered" },
+    "identity.user.logged-in":     { "icon": "fa-sign-in-alt", "label": "Logged in" },
+    "identity.user.suspended":     { "icon": "fa-user-slash", "label": "Suspended" },
+    "identity.session.active":     { "icon": "fa-key", "label": "Active session" },
+    "identity.session.expired":    { "icon": "fa-clock", "label": "Expired session" },
+
+    "fulfillment.shipment.pending":    { "icon": "fa-box", "label": "Shipment pending" },
+    "fulfillment.shipment.in-transit": { "icon": "fa-shipping-fast", "label": "In transit" },
+    "fulfillment.shipment.delivered":  { "icon": "fa-box-open", "label": "Delivered" }
+  }
+}

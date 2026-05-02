@@ -1,0 +1,36 @@
+{
+  "name": "artifact-engine",
+  "version": "0.1.0",
+  "description": "An AI operating system for software quality intelligence — orchestrator + 7 specialized intelligence systems",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "lint:workflows": "echo 'TODO: validate every systems/*/pipelines/*.workflow.yaml against core/artifact-contracts/workflow-contract'",
+    "lint:contracts": "echo 'TODO: validate every core/artifact-contracts/**/*.md frontmatter and embedded JSON schemas'",
+    "lint:agents": "echo 'TODO: validate frontmatter declared_inputs/outputs match referenced contracts'",
+    "lint:docs": "echo 'TODO: check markdown link integrity across docs and root'",
+    "lint": "pnpm run lint:workflows && pnpm run lint:contracts && pnpm run lint:agents && pnpm run lint:docs",
+    "start": "echo 'TODO: orchestrator entrypoint — reference runtime ships in v0.2'",
+    "resume": "echo 'TODO: resume-strategy entrypoint — reference runtime ships in v0.2'",
+    "verify": "echo 'TODO: verifier-only entrypoint — reference runtime ships in v0.2'",
+    "cancel": "echo 'TODO: cancel a run by id — reference runtime ships in v0.2'",
+    "doctor": "echo 'TODO: environment + registry sanity check'"
+  },
+  "keywords": [
+    "ai",
+    "quality-intelligence",
+    "test-automation",
+    "orchestration",
+    "artifact-driven",
+    "claude-code",
+    "mcp"
+  ],
+  "workspaces": [],
+  "dependencies": {},
+  "devDependencies": {}
+}

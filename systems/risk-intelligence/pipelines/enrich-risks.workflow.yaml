@@ -1,0 +1,99 @@
+workflow_id: enrich-risks-pipeline@1.0
+system: risk-intelligence
+description: "BF preliminary risks + system graph + dep map → enriched risk register with blast-radius + mitigations"
+
+defaults:
+  default_timeout_seconds: 900
+  hard_timeout_seconds: 5400
+
+inputs: []
+
+consumes_shared:
+  - { kind: business-flow,    path_template: "shared-artifacts/business-flows/{feature}.md", contract: "business-flow-contract@^1.0" }
+  - { kind: risks,            path_template: "shared-artifacts/risks/{feature}.json",        contract: "risk-contract@^1.0" }
+  - { kind: system-graph,     path_template: "shared-artifacts/system-graphs/{feature}.json", contract: "system-graph-contract@^1.0" }
+  - { kind: dependency-map,   path_template: "shared-artifacts/dependency-maps/{feature}.json", contract: "system-graph-contract@^1.0" }
+  - { kind: scenario-seeds,   path_template: "shared-artifacts/scenarios/{feature}.seed.json",  contract: "scenario-contract@^1.0" }
+
+produces_shared:
+  - { kind: risks,                   path_template: "shared-artifacts/risks/{feature}.json",                contract: "risk-contract@^1.0" }
+  - { kind: blast-radius,            path_template: "shared-artifacts/risks/{feature}.blast-radius.json", contract: "risk-contract@^1.0" }
+  - { kind: risks-map,               path_template: "shared-artifacts/risks/{feature}.map.mmd",            contract: "risk-contract@^1.0" }
+  - { kind: traceability-matrix,     path_template: "shared-artifacts/traceability/{feature}.risk.matrix.json", contract: "traceability-contract@^1.0" }
+  - { kind: verification-report,     path_template: "shared-artifacts/verification/{feature}.risk.report.json", contract: "verification-contract@^1.0" }
+
+phases:
+  - id: 01-input
+    name: "Load shared inputs"
+    actor: orchestrator
+    required_outputs: []
+
+  - id: 02-detect
+    name: "Risk Detection (enrichment)"
+    agent: risk-detector
+    skills: [risk-extraction]
+    mcp: [risk-analysis-mcp, dependency-analysis-mcp, traceability-mcp]
+    required_outputs:
+      - "02-analysis/risks.enriched.json"
+    depends_on: [01-input]
+    gates: [completeness-gate]
+
+  - id: 02b-blast-radius
+    name: "Blast Radius Analysis"
+    agent: blast-radius-analyzer
+    mcp: [dependency-analysis-mcp]
+    required_outputs:
+      - "02-analysis/blast-radius.json"
+    depends_on: [02-detect]
+    gates: [completeness-gate]
+
+  - id: 02c-failure-modes
+    name: "Failure Mode Enumeration"
+    agent: failure-mode-enumerator
+    mcp: [risk-analysis-mcp]
+    required_outputs:
+      - "02-analysis/failure-modes.json"
+    depends_on: [02-detect]
+    gates: [completeness-gate]
+
+  - id: 03-mitigations
+    name: "Mitigation Generation"
+    agent: mitigation-generator
+    mcp: [risk-analysis-mcp]
+    required_outputs:
+      - "03-generation/risks.final.json"
+      - "03-generation/risks.map.mmd"
+    depends_on: [02-detect, 02b-blast-radius, 02c-failure-modes]
+    gates: [completeness-gate, consistency-gate]
+
+  - id: 04-validation
+    name: "Schema + Coupling"
+    validators: [artifact-validator, consistency-validator, completeness-validator, traceability-validator]
+    depends_on: [03-mitigations]
+    required_outputs: []
+    gates: [consistency-gate, quality-depth-gate]
+
+  - id: 05-verification
+    name: "Verifier"
+    agent: risk-verifier
+    mcp: [verification-mcp, traceability-mcp, risk-analysis-mcp]
+    required_outputs:
+      - "05-verification/report.md"
+      - "05-verification/report.json"
+    depends_on: [04-validation]
+    gates: [traceability-gate, quality-depth-gate]
+
+  - id: 06-publish
+    name: "Promote (overwrites preliminary risks)"
+    actor: orchestrator
+    depends_on: [05-verification]
+    required_outputs: []
+
+checkpoint_after: [02-detect, 03-mitigations, 05-verification]
+
+recovery_strategies:
+  agent_error: { kind: retry-up-to-n, n: 2 }
+  agent_timeout: { kind: retry-up-to-n, n: 1 }
+  validation_failed: { kind: stop-and-report }
+  gate_failed: { kind: stop-and-report }
+  mcp_unavailable: { kind: retry-with-backoff, max: 3, base_seconds: 10 }

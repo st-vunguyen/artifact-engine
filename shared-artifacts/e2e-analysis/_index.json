@@ -1,0 +1,12 @@
+{
+  "folder": "shared-artifacts/e2e-analysis",
+  "kind": "e2e-analysis",
+  "registered_producer": "e2e-intelligence",
+  "registered_consumers": [
+    "regression-intelligence",
+    "reporting-mcp"
+  ],
+  "contract": "e2e-contract@^1.0",
+  "retention": { "keep_versions": 5 },
+  "naming": "<feature>.json | <feature>.md | <feature>.journey-graph.mmd | <feature>.poms.json"
+}

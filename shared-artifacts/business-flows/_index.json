@@ -1,0 +1,17 @@
+{
+  "folder": "shared-artifacts/business-flows",
+  "kind": "business-flow",
+  "registered_producer": "business-flow-intelligence",
+  "registered_consumers": [
+    "system-intelligence",
+    "risk-intelligence",
+    "test-strategy-intelligence",
+    "api-testing-intelligence",
+    "e2e-intelligence",
+    "regression-intelligence"
+  ],
+  "contract": "business-flow-contract@^1.0",
+  "retention": { "keep_versions": 5 },
+  "naming": "<feature>.md",
+  "frontmatter_required": ["contract", "producer", "producer_run_id", "feature", "generated_at", "checksum"]
+}

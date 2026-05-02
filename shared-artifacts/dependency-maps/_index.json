@@ -1,0 +1,13 @@
+{
+  "folder": "shared-artifacts/dependency-maps",
+  "kind": "dependency-map",
+  "registered_producer": "system-intelligence",
+  "registered_consumers": [
+    "test-strategy-intelligence",
+    "risk-intelligence",
+    "regression-intelligence"
+  ],
+  "contract": "system-graph-contract@^1.0",
+  "retention": { "keep_versions": 5 },
+  "naming": "<feature>.json"
+}

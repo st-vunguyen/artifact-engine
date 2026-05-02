@@ -1,0 +1,154 @@
+workflow_id: e2e-full-pipeline@1.0
+system: e2e-intelligence
+description: "Upstream artifacts + UI flows → Playwright pack (strategy → scenarios → code → fixtures → execution)"
+
+defaults:
+  default_timeout_seconds: 1800
+  hard_timeout_seconds: 10800
+
+inputs:
+  - name: ui_specs
+    kind: directory
+    path: input/ui-specs/
+    required: false
+  - name: ui_flows
+    kind: directory
+    path: input/ui-flows/
+    required: false
+
+consumes_shared:
+  - { kind: business-flow,    path_template: "shared-artifacts/business-flows/{feature}.md",     contract: "business-flow-contract@^1.0" }
+  - { kind: test-strategy,    path_template: "shared-artifacts/test-strategies/{feature}.md",   contract: "test-strategy-contract@^1.0" }
+  - { kind: state-machine,    path_template: "shared-artifacts/state-machines/{feature}.json",  contract: "business-flow-contract@^1.0" }
+  - { kind: risks,            path_template: "shared-artifacts/risks/{feature}.json",            contract: "risk-contract@^1.0" }
+  - { kind: scenario-seeds,   path_template: "shared-artifacts/scenarios/{feature}.seed.json",   contract: "scenario-contract@^1.0" }
+  - { kind: api-analysis,     path_template: "shared-artifacts/api-analysis/{feature}.json",    contract: "api-analysis-contract@^1.0", optional: true }
+
+produces_shared:
+  - { kind: e2e-analysis,        path_template: "shared-artifacts/e2e-analysis/{feature}.json",                     contract: "e2e-contract@^1.0" }
+  - { kind: e2e-analysis-md,     path_template: "shared-artifacts/e2e-analysis/{feature}.md",                       contract: "e2e-contract@^1.0" }
+  - { kind: journey-graph,       path_template: "shared-artifacts/e2e-analysis/{feature}.journey-graph.mmd",        contract: "e2e-contract@^1.0" }
+  - { kind: poms,                path_template: "shared-artifacts/e2e-analysis/{feature}.poms.json",                contract: "e2e-contract@^1.0" }
+  - { kind: e2e-scenarios,       path_template: "shared-artifacts/scenarios/{feature}.e2e.json",                    contract: "scenario-contract@^1.0" }
+  - { kind: traceability-matrix, path_template: "shared-artifacts/traceability/{feature}.e2e.matrix.json",         contract: "traceability-contract@^1.0" }
+  - { kind: verification-report, path_template: "shared-artifacts/verification/{feature}.e2e.report.json",         contract: "verification-contract@^1.0" }
+
+phases:
+  - id: 01-input
+    name: "Source Intake"
+    agent: spec-analyzer
+    skills: [spec-intake]
+    mcp: [spec-parser-mcp]
+    required_outputs:
+      - "01-input/normalized/*.md"
+      - "01-input/manifest.json"
+    gates: [completeness-gate]
+
+  - id: 02-strategy
+    name: "Strategy Pack (7 docs)"
+    agent: e2e-strategy-builder
+    skills: [strategy-pack]
+    mcp: [traceability-mcp, risk-analysis-mcp]
+    required_outputs:
+      - "tests/e2e/docs/strategy/00_index.md"
+      - "tests/e2e/docs/strategy/01_automation-test-strategy.md"
+      - "tests/e2e/docs/strategy/02_automation-scope-matrix.md"
+      - "tests/e2e/docs/strategy/03_automation-candidate-cases.md"
+      - "tests/e2e/docs/strategy/04_defect-detection-design.md"
+      - "tests/e2e/docs/strategy/05_data-environment-and-mocking.md"
+      - "tests/e2e/docs/strategy/06_execution-plan-and-pipeline.md"
+      - "tests/e2e/docs/strategy/07_traceability-and-open-questions.md"
+    depends_on: [01-input]
+    gates: [completeness-gate, traceability-gate]
+
+  - id: 03-scenarios
+    name: "Scenarios Pack (7 docs)"
+    agent: e2e-scenario-builder
+    skills: [scenario-pack]
+    mcp: [traceability-mcp]
+    required_outputs:
+      - "tests/e2e/docs/scenarios/00_index.md"
+      - "tests/e2e/docs/scenarios/01_scenario-overview.md"
+      - "tests/e2e/docs/scenarios/02_feature-scenarios.md"
+      - "tests/e2e/docs/scenarios/03_playwright-mapping.md"
+      - "tests/e2e/docs/scenarios/04_test-data-fixtures-and-mocks.md"
+      - "tests/e2e/docs/scenarios/05_assertion-and-oracle-design.md"
+      - "tests/e2e/docs/scenarios/06_execution-suites.md"
+      - "tests/e2e/docs/scenarios/07_traceability-gaps-open-questions.md"
+    depends_on: [02-strategy]
+    gates: [completeness-gate, consistency-gate, traceability-gate]
+
+  - id: 04-code
+    name: "Test Code (specs + page objects + helpers + config)"
+    agent: e2e-code-builder
+    skills: [code-generation]
+    mcp: [traceability-mcp]
+    required_outputs:
+      - "tests/e2e/config/index.ts"
+      - "tests/e2e/core/BasePage.ts"
+      - "tests/e2e/core/BaseComponent.ts"
+      - "tests/e2e/core/index.ts"
+      - "tests/e2e/helpers/wait-helpers.ts"
+      - "tests/e2e/helpers/visual-helpers.ts"
+      - "tests/e2e/helpers/a11y-helpers.ts"
+      - "tests/e2e/pages/index.ts"
+      - "tests/e2e/specs/*.spec.ts"
+      - "playwright.config.ts"
+    depends_on: [03-scenarios]
+    gates: [completeness-gate, consistency-gate]
+
+  - id: 05-fixtures
+    name: "Fixtures + Reporters + Baselines"
+    agent: e2e-fixture-builder
+    skills: [fixture-generation]
+    mcp: [traceability-mcp]
+    required_outputs:
+      - "tests/e2e/fixtures/global-setup.ts"
+      - "tests/e2e/fixtures/global-teardown.ts"
+      - "tests/e2e/fixtures/ui.fixture.ts"
+      - "tests/e2e/fixtures/visual.fixture.ts"
+      - "tests/e2e/fixtures/a11y.fixture.ts"
+      - "tests/e2e/fixtures/data.fixture.ts"
+      - "tests/e2e/fixtures/index.ts"
+      - "tests/e2e/reporters/dashboard-reporter.ts"
+      - "tests/e2e/snapshots/.gitkeep"
+    depends_on: [04-code]
+    gates: [completeness-gate]
+
+  - id: 06-validation
+    name: "Schema + Code Lint + Cross-File Consistency"
+    validators: [artifact-validator, consistency-validator, completeness-validator, traceability-validator]
+    depends_on: [05-fixtures]
+    required_outputs: []
+    gates: [consistency-gate, quality-depth-gate]
+
+  - id: 07-verification
+    name: "Verifier (e2e-analysis + reports)"
+    agent: e2e-verifier
+    skills: [verification]
+    mcp: [verification-mcp, traceability-mcp, reporting-mcp]
+    required_outputs:
+      - "e2e-analysis.json"
+      - "e2e-analysis.md"
+      - "tests/e2e/docs/reports/journey-graph.mmd"
+      - "poms.json"
+      - "05-verification/report.md"
+      - "05-verification/report.json"
+    depends_on: [06-validation]
+    gates: [traceability-gate, quality-depth-gate]
+
+  - id: 08-publish
+    name: "Promote to Shared + Output"
+    actor: orchestrator
+    depends_on: [07-verification]
+    required_outputs: []
+
+checkpoint_after: [02-strategy, 03-scenarios, 05-fixtures, 07-verification]
+
+recovery_strategies:
+  agent_error: { kind: retry-up-to-n, n: 2 }
+  agent_timeout: { kind: retry-up-to-n, n: 1 }
+  validation_failed: { kind: stop-and-report }
+  gate_failed: { kind: stop-and-report }
+  mcp_unavailable: { kind: retry-with-backoff, max: 3, base_seconds: 10 }
+  agent_low_coverage: { kind: retry-with-altered-prompt, n: 2, alteration: { kind: stricter-evidence } }

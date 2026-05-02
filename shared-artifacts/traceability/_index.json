@@ -1,0 +1,21 @@
+{
+  "folder": "shared-artifacts/traceability",
+  "kind": "traceability-matrix",
+  "producers": [
+    "business-flow-intelligence",
+    "system-intelligence",
+    "risk-intelligence",
+    "test-strategy-intelligence",
+    "api-testing-intelligence",
+    "e2e-intelligence",
+    "regression-intelligence"
+  ],
+  "registered_consumers": [
+    "reporting-mcp",
+    "audit"
+  ],
+  "contract": "traceability-contract@^1.0",
+  "retention": { "keep_versions": 5 },
+  "naming": "<feature>.<system>.matrix.json",
+  "note": "Each system writes its own matrix; the suffix .<system>. distinguishes producers."
+}

@@ -1,0 +1,138 @@
+workflow_id: business-flow-full-pipeline@1.0
+system: business-flow-intelligence
+description: "Spec corpus → 17-section analysis → Mermaid pack → verification → publish"
+
+defaults:
+  default_timeout_seconds: 1200
+  hard_timeout_seconds: 7200
+  max_total_retries: 6
+
+inputs:
+  - name: spec_corpus
+    kind: directory
+    path: input/specs/
+    required: true
+    validator: spec-corpus-validator
+  - name: requirements
+    kind: directory
+    path: input/requirements/
+    required: false
+  - name: business_documents
+    kind: directory
+    path: input/business-documents/
+    required: false
+
+consumes_shared: []
+
+produces_shared:
+  - kind: business-flow
+    path_template: shared-artifacts/business-flows/{feature}.md
+    contract: business-flow-contract@^1.0
+  - kind: state-machine
+    path_template: shared-artifacts/state-machines/{feature}.json
+    contract: business-flow-contract@^1.0
+  - kind: state-machine-diagram
+    path_template: shared-artifacts/state-machines/{feature}.mmd
+    contract: business-flow-contract@^1.0
+  - kind: risks
+    path_template: shared-artifacts/risks/{feature}.json
+    contract: risk-contract@^1.0
+  - kind: scenario-seeds
+    path_template: shared-artifacts/scenarios/{feature}.seed.json
+    contract: scenario-contract@^1.0
+  - kind: traceability-matrix
+    path_template: shared-artifacts/traceability/{feature}.business-flow.matrix.json
+    contract: traceability-contract@^1.0
+  - kind: verification-report
+    path_template: shared-artifacts/verification/{feature}.business-flow.report.json
+    contract: verification-contract@^1.0
+
+phases:
+  - id: 01-input
+    name: "Source Intake"
+    agent: spec-analyzer
+    skills: [spec-intake]
+    mcp: [spec-parser-mcp]
+    required_outputs:
+      - "01-input/normalized/*.md"
+      - "01-input/manifest.json"
+    gates: [completeness-gate]
+
+  - id: 02-analysis
+    name: "17-Section Analysis"
+    agent: business-flow-generator
+    skills: [analysis-extraction]
+    mcp: [traceability-mcp, rule-analysis-mcp, business-flow-mcp]
+    required_outputs:
+      - "02-analysis/business-flow-document.md"
+      - "02-analysis/permissions.json"
+      - "02-analysis/risk.json"
+      - "02-analysis/scenario-seeds.md"
+      - "02-analysis/state-machine.preliminary.json"
+    depends_on: [01-input]
+    gates: [completeness-gate, traceability-gate]
+    timeout_seconds: 1800
+
+  - id: 03-generation
+    name: "Mermaid Pack"
+    agent: mermaid-generator
+    skills: [mermaid-pack]
+    mcp: [state-machine-mcp]
+    required_outputs:
+      - "03-generation/business-flow-mermaid.md"
+      - "03-generation/flowchart.mmd"
+      - "03-generation/swimlane.mmd"
+      - "03-generation/state-diagram.mmd"
+      - "03-generation/state-machine.json"
+    depends_on: [02-analysis]
+    gates: [completeness-gate, consistency-gate]
+
+  - id: 04-validation
+    name: "Schema + Rule Validation"
+    validators: [artifact-validator, consistency-validator, completeness-validator, traceability-validator]
+    depends_on: [02-analysis, 03-generation]
+    required_outputs: []
+    gates: [consistency-gate, quality-depth-gate]
+
+  - id: 05-verification
+    name: "Evidence Reconciliation"
+    agent: business-flow-verifier
+    mcp: [verification-mcp, traceability-mcp, rule-analysis-mcp]
+    required_outputs:
+      - "05-verification/report.md"
+      - "05-verification/report.json"
+    depends_on: [04-validation]
+    gates: [traceability-gate, quality-depth-gate]
+    timeout_seconds: 900
+
+  - id: 06-publish
+    name: "Promote to Shared + Output"
+    actor: orchestrator
+    depends_on: [05-verification]
+    required_outputs: []
+
+checkpoint_after:
+  - 02-analysis
+  - 03-generation
+  - 05-verification
+
+recovery_strategies:
+  agent_error:
+    kind: retry-up-to-n
+    n: 2
+  agent_timeout:
+    kind: retry-up-to-n
+    n: 1
+  validation_failed:
+    kind: stop-and-report
+  gate_failed:
+    kind: stop-and-report
+  mcp_unavailable:
+    kind: retry-with-backoff
+    max: 3
+    base_seconds: 10
+  agent_low_coverage:
+    kind: retry-with-altered-prompt
+    n: 2
+    alteration:
+      kind: stricter-evidence

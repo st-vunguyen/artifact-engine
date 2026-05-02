@@ -1,0 +1,112 @@
+workflow_id: system-graph-pipeline@1.0
+system: system-intelligence
+description: "Business-flow + HLD/LLD/api-specs → system graph + dependency map"
+
+defaults:
+  default_timeout_seconds: 900
+  hard_timeout_seconds: 5400
+
+inputs:
+  - name: hld
+    kind: directory
+    path: input/hld/
+    required: false
+  - name: lld
+    kind: directory
+    path: input/lld/
+    required: false
+  - name: api_specs
+    kind: directory
+    path: input/api-specs/
+    required: false
+
+consumes_shared:
+  - kind: business-flow
+    path_template: shared-artifacts/business-flows/{feature}.md
+    contract: business-flow-contract@^1.0
+
+produces_shared:
+  - kind: system-graph
+    path_template: shared-artifacts/system-graphs/{feature}.json
+    contract: system-graph-contract@^1.0
+  - kind: system-graph-md
+    path_template: shared-artifacts/system-graphs/{feature}.md
+    contract: system-graph-contract@^1.0
+  - kind: system-graph-diagram
+    path_template: shared-artifacts/system-graphs/{feature}.diagram.mmd
+    contract: system-graph-contract@^1.0
+  - kind: dependency-map
+    path_template: shared-artifacts/dependency-maps/{feature}.json
+    contract: system-graph-contract@^1.0
+  - kind: traceability-matrix
+    path_template: shared-artifacts/traceability/{feature}.system.matrix.json
+    contract: traceability-contract@^1.0
+  - kind: verification-report
+    path_template: shared-artifacts/verification/{feature}.system.report.json
+    contract: verification-contract@^1.0
+
+phases:
+  - id: 01-input
+    name: "Source Intake"
+    agent: spec-analyzer    # reuse business-flow's spec-analyzer
+    skills: [spec-intake]
+    mcp: [spec-parser-mcp]
+    required_outputs:
+      - "01-input/normalized/*.md"
+      - "01-input/manifest.json"
+    gates: [completeness-gate]
+
+  - id: 02-analysis
+    name: "Component + Integration Extraction"
+    agent: system-graph-builder
+    skills: [graph-extraction]
+    mcp: [traceability-mcp, dependency-analysis-mcp]
+    required_outputs:
+      - "02-analysis/system-graph.json"
+      - "02-analysis/system-graph.md"
+      - "02-analysis/boundaries.json"
+    depends_on: [01-input]
+    gates: [completeness-gate, traceability-gate]
+
+  - id: 03-generation
+    name: "Mermaid + Dependency Map"
+    agent: dependency-mapper
+    mcp: [dependency-analysis-mcp, state-machine-mcp]
+    required_outputs:
+      - "03-generation/system-graph.diagram.mmd"
+      - "03-generation/dependency-map.json"
+    depends_on: [02-analysis]
+    gates: [completeness-gate, consistency-gate]
+
+  - id: 04-validation
+    name: "Schema + Connectivity Validation"
+    validators: [artifact-validator, consistency-validator, completeness-validator, traceability-validator]
+    depends_on: [03-generation]
+    required_outputs: []
+    gates: [consistency-gate, quality-depth-gate]
+
+  - id: 05-verification
+    name: "Verifier"
+    agent: system-graph-verifier
+    mcp: [verification-mcp, traceability-mcp, dependency-analysis-mcp]
+    required_outputs:
+      - "05-verification/report.md"
+      - "05-verification/report.json"
+    depends_on: [04-validation]
+    gates: [traceability-gate, quality-depth-gate]
+
+  - id: 06-publish
+    name: "Promote"
+    actor: orchestrator
+    depends_on: [05-verification]
+    required_outputs: []
+
+checkpoint_after: [02-analysis, 03-generation, 05-verification]
+
+recovery_strategies:
+  agent_error: { kind: retry-up-to-n, n: 2 }
+  agent_timeout: { kind: retry-up-to-n, n: 1 }
+  validation_failed: { kind: stop-and-report }
+  gate_failed: { kind: stop-and-report }
+  mcp_unavailable: { kind: retry-with-backoff, max: 3, base_seconds: 10 }
+  agent_low_coverage: { kind: retry-with-altered-prompt, n: 2, alteration: { kind: stricter-evidence } }

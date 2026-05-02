@@ -1,0 +1,124 @@
+workflow_id: test-strategy-pipeline@1.0
+system: test-strategy-intelligence
+description: "BF + system-graph + risks → 7-section test strategy"
+
+defaults:
+  default_timeout_seconds: 1200
+  hard_timeout_seconds: 5400
+
+inputs:
+  - name: requirements
+    kind: directory
+    path: input/requirements/
+    required: false
+
+consumes_shared:
+  - { kind: business-flow,    path_template: "shared-artifacts/business-flows/{feature}.md",       contract: "business-flow-contract@^1.0" }
+  - { kind: risks,            path_template: "shared-artifacts/risks/{feature}.json",              contract: "risk-contract@^1.0" }
+  - { kind: system-graph,     path_template: "shared-artifacts/system-graphs/{feature}.json",     contract: "system-graph-contract@^1.0" }
+  - { kind: state-machine,    path_template: "shared-artifacts/state-machines/{feature}.json",    contract: "business-flow-contract@^1.0" }
+  - { kind: scenario-seeds,   path_template: "shared-artifacts/scenarios/{feature}.seed.json",     contract: "scenario-contract@^1.0" }
+  - { kind: dependency-map,   path_template: "shared-artifacts/dependency-maps/{feature}.json",   contract: "system-graph-contract@^1.0" }
+
+produces_shared:
+  - { kind: test-strategy,        path_template: "shared-artifacts/test-strategies/{feature}.md",                     contract: "test-strategy-contract@^1.0" }
+  - { kind: test-strategy-data,   path_template: "shared-artifacts/test-strategies/{feature}.json",                   contract: "test-strategy-contract@^1.0" }
+  - { kind: system-overview,      path_template: "shared-artifacts/test-strategies/{feature}.system-overview.mmd",    contract: "test-strategy-contract@^1.0" }
+  - { kind: traceability-matrix,  path_template: "shared-artifacts/traceability/{feature}.test-strategy.matrix.json", contract: "traceability-contract@^1.0" }
+  - { kind: verification-report,  path_template: "shared-artifacts/verification/{feature}.test-strategy.report.json", contract: "verification-contract@^1.0" }
+
+phases:
+  - id: 01-input
+    name: "Load shared inputs"
+    actor: orchestrator
+    required_outputs: []
+
+  - id: 02-scope
+    name: "Scope & Objective"
+    agent: scope-analyzer
+    mcp: [traceability-mcp]
+    required_outputs:
+      - "02-scope/scope.json"
+      - "02-scope/general-purpose.md"
+    depends_on: [01-input]
+    gates: [completeness-gate, traceability-gate]
+
+  - id: 03-approach
+    name: "Testing Approach"
+    agent: strategy-builder
+    skills: [strategy-composition]
+    mcp: [risk-analysis-mcp, dependency-analysis-mcp]
+    required_outputs:
+      - "03-approach/approach.json"
+    depends_on: [02-scope]
+    gates: [completeness-gate, consistency-gate]
+
+  - id: 04-risk-map
+    name: "Risk → Test Mitigation"
+    agent: risk-prioritizer
+    mcp: [risk-analysis-mcp, traceability-mcp]
+    required_outputs:
+      - "04-risk-map/risk-mitigation.json"
+    depends_on: [03-approach]
+    gates: [completeness-gate, consistency-gate]
+
+  - id: 05-regression
+    name: "Regression Plan"
+    agent: regression-planner
+    mcp: [dependency-analysis-mcp]
+    required_outputs:
+      - "05-regression/regression-plan.json"
+    depends_on: [03-approach]
+    gates: [completeness-gate]
+
+  - id: 06-dod
+    name: "Definition of Done"
+    agent: dod-builder
+    mcp: [traceability-mcp]
+    required_outputs:
+      - "06-dod/dod.json"
+    depends_on: [02-scope]
+    gates: [completeness-gate]
+
+  - id: 07-compose
+    name: "Compose 7-Section Document"
+    agent: strategy-builder
+    skills: [strategy-composition]
+    required_outputs:
+      - "07-compose/test-strategy.md"
+      - "07-compose/test-strategy.json"
+      - "07-compose/system-overview.mmd"
+    depends_on: [02-scope, 03-approach, 04-risk-map, 05-regression, 06-dod]
+    gates: [completeness-gate, consistency-gate]
+
+  - id: 08-validation
+    name: "Validation"
+    validators: [artifact-validator, consistency-validator, completeness-validator, traceability-validator]
+    depends_on: [07-compose]
+    required_outputs: []
+    gates: [consistency-gate, quality-depth-gate]
+
+  - id: 09-verification
+    name: "Verifier"
+    agent: strategy-verifier
+    mcp: [verification-mcp, traceability-mcp]
+    required_outputs:
+      - "09-verification/report.md"
+      - "09-verification/report.json"
+    depends_on: [08-validation]
+    gates: [traceability-gate, quality-depth-gate]
+
+  - id: 10-publish
+    name: "Promote"
+    actor: orchestrator
+    depends_on: [09-verification]
+    required_outputs: []
+
+checkpoint_after: [03-approach, 07-compose, 09-verification]
+
+recovery_strategies:
+  agent_error: { kind: retry-up-to-n, n: 2 }
+  agent_timeout: { kind: retry-up-to-n, n: 1 }
+  validation_failed: { kind: stop-and-report }
+  gate_failed: { kind: stop-and-report }
+  mcp_unavailable: { kind: retry-with-backoff, max: 3, base_seconds: 10 }

@@ -1,0 +1,33 @@
+# Auto-detect text files; ensure LF line endings on all platforms.
+* text=auto eol=lf
+
+# Explicitly text
+*.md          text eol=lf
+*.markdown    text eol=lf
+*.json        text eol=lf
+*.jsonc       text eol=lf
+*.yaml        text eol=lf
+*.yml         text eol=lf
+*.ts          text eol=lf
+*.tsx         text eol=lf
+*.js          text eol=lf
+*.jsx         text eol=lf
+*.mjs         text eol=lf
+*.cjs         text eol=lf
+*.py          text eol=lf
+*.sh          text eol=lf
+*.html        text eol=lf
+*.css         text eol=lf
+*.svg         text eol=lf
+
+# Binary
+*.png         binary
+*.jpg         binary
+*.jpeg        binary
+*.gif         binary
+*.pdf         binary
+*.docx        binary
+*.xlsx        binary
+*.zip         binary
+*.tar         binary
+*.gz          binary

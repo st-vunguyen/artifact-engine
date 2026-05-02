@@ -1,0 +1,17 @@
+{
+  "folder": "shared-artifacts/risks",
+  "kind": "risks",
+  "registered_producer": "risk-intelligence",
+  "preliminary_producer": "business-flow-intelligence",
+  "augmenting_producers": ["api-testing-intelligence", "e2e-intelligence"],
+  "registered_consumers": [
+    "test-strategy-intelligence",
+    "api-testing-intelligence",
+    "e2e-intelligence",
+    "regression-intelligence"
+  ],
+  "contract": "risk-contract@^1.0",
+  "retention": { "keep_versions": 5 },
+  "naming": "<feature>.json | <feature>.blast-radius.json | <feature>.map.mmd | <feature>.<system>-augmented.json",
+  "augmentation_protocol": "Augmenting systems write <feature>.<system>-augmented.json that extends the base via 'extends' + 'extends_checksum' fields."
+}

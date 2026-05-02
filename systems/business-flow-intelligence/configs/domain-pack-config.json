@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "description": "Domain pack catalog. Each domain triggers domain-specific gap patterns + risk categories.",
+  "domains": [
+    { "id": "commerce",     "label": "Commerce / Retail / Marketplace",      "gap_focus": ["payment", "inventory", "fulfillment", "refund"] },
+    { "id": "identity",     "label": "Identity / Auth / Account",            "gap_focus": ["registration", "auth", "session", "permissions", "tenant-isolation"] },
+    { "id": "finance",      "label": "Finance / Billing / Subscriptions",    "gap_focus": ["billing", "invoicing", "tax", "double-charge", "compliance"] },
+    { "id": "fulfillment",  "label": "Fulfillment / Shipping / Logistics",   "gap_focus": ["shipping", "tracking", "returns", "carrier-failure"] },
+    { "id": "content",      "label": "Content / Publishing / Media",         "gap_focus": ["versioning", "publishing", "rollback", "embargo"] },
+    { "id": "operations",   "label": "Operations / Internal Tools",          "gap_focus": ["bulk-actions", "audit-trail", "ops-permissions"] },
+    { "id": "risk",         "label": "Risk / Fraud / Compliance",            "gap_focus": ["screening", "blocking", "appeals", "audit"] },
+    { "id": "platform",     "label": "Platform / Infra / Developer",         "gap_focus": ["api-keys", "webhooks", "rate-limit", "quotas"] },
+    { "id": "data",         "label": "Data / Pipelines / ETL",               "gap_focus": ["ingestion", "lineage", "consistency", "rollback"] },
+    { "id": "analytics",    "label": "Analytics / Dashboards",                "gap_focus": ["aggregation", "freshness", "drill-down", "permission-scope"] },
+    { "id": "support",      "label": "Support / Customer Service",            "gap_focus": ["ticketing", "escalation", "SLA", "history"] },
+    { "id": "marketing",    "label": "Marketing / Campaigns",                 "gap_focus": ["targeting", "consent", "opt-out", "delivery"] },
+    { "id": "sales",        "label": "Sales / CRM / Pipeline",                "gap_focus": ["lead", "pipeline", "ownership", "handoff"] }
+  ]
+}

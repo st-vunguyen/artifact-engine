@@ -1,0 +1,21 @@
+{
+  "folder": "shared-artifacts/verification",
+  "kind": "verification-report",
+  "producers": [
+    "business-flow-intelligence",
+    "system-intelligence",
+    "risk-intelligence",
+    "test-strategy-intelligence",
+    "api-testing-intelligence",
+    "e2e-intelligence",
+    "regression-intelligence"
+  ],
+  "registered_consumers": [
+    "orchestrator",
+    "reporting-mcp",
+    "audit"
+  ],
+  "contract": "verification-contract@^1.0",
+  "retention": { "keep_versions": 5 },
+  "naming": "<feature>.<system>.report.json | <feature>.<system>.report.md"
+}

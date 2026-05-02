@@ -1,0 +1,13 @@
+{
+  "folder": "shared-artifacts/regression-analysis",
+  "kind": "regression-analysis",
+  "registered_producer": "regression-intelligence",
+  "registered_consumers": [
+    "api-testing-intelligence",
+    "e2e-intelligence",
+    "reporting-mcp"
+  ],
+  "contract": "regression-contract@^1.0",
+  "retention": { "keep_versions": 10 },
+  "naming": "<feature>.json | <feature>.md | <feature>.diff.json"
+}

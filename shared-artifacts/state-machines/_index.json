@@ -1,0 +1,14 @@
+{
+  "folder": "shared-artifacts/state-machines",
+  "kind": "state-machine",
+  "registered_producer": "business-flow-intelligence",
+  "registered_consumers": [
+    "risk-intelligence",
+    "test-strategy-intelligence",
+    "api-testing-intelligence",
+    "e2e-intelligence"
+  ],
+  "contract": "business-flow-contract@^1.0",
+  "retention": { "keep_versions": 5 },
+  "naming": "<feature>.json | <feature>.mmd"
+}

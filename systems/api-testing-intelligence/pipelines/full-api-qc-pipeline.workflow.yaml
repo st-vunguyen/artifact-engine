@@ -1,0 +1,198 @@
+workflow_id: api-test-full-pipeline@1.0
+system: api-testing-intelligence
+description: "OpenAPI + upstream artifacts → 10-folder API test pack with per-status coverage"
+
+defaults:
+  default_timeout_seconds: 1800
+  hard_timeout_seconds: 10800
+
+inputs:
+  - name: openapi
+    kind: directory
+    path: input/api-specs/
+    required: true
+    validator: openapi-validator
+
+consumes_shared:
+  - { kind: business-flow,    path_template: "shared-artifacts/business-flows/{feature}.md",     contract: "business-flow-contract@^1.0" }
+  - { kind: test-strategy,    path_template: "shared-artifacts/test-strategies/{feature}.md",   contract: "test-strategy-contract@^1.0" }
+  - { kind: system-graph,     path_template: "shared-artifacts/system-graphs/{feature}.json",   contract: "system-graph-contract@^1.0" }
+  - { kind: risks,            path_template: "shared-artifacts/risks/{feature}.json",            contract: "risk-contract@^1.0" }
+  - { kind: scenario-seeds,   path_template: "shared-artifacts/scenarios/{feature}.seed.json",   contract: "scenario-contract@^1.0" }
+  - { kind: state-machine,    path_template: "shared-artifacts/state-machines/{feature}.json",  contract: "business-flow-contract@^1.0" }
+
+produces_shared:
+  - { kind: api-analysis,        path_template: "shared-artifacts/api-analysis/{feature}.json",                    contract: "api-analysis-contract@^1.0" }
+  - { kind: api-analysis-md,     path_template: "shared-artifacts/api-analysis/{feature}.md",                      contract: "api-analysis-contract@^1.0" }
+  - { kind: api-coverage,        path_template: "shared-artifacts/api-analysis/{feature}.coverage-matrix.json",   contract: "api-analysis-contract@^1.0" }
+  - { kind: oas-snapshot,        path_template: "shared-artifacts/api-analysis/{feature}.oas-snapshot.json",       contract: "api-analysis-contract@^1.0" }
+  - { kind: review-findings,     path_template: "shared-artifacts/api-analysis/{feature}.review-findings.json",   contract: "api-analysis-contract@^1.0" }
+  - { kind: api-scenarios,       path_template: "shared-artifacts/scenarios/{feature}.api.json",                   contract: "scenario-contract@^1.0" }
+  - { kind: traceability-matrix, path_template: "shared-artifacts/traceability/{feature}.api.matrix.json",        contract: "traceability-contract@^1.0" }
+  - { kind: verification-report, path_template: "shared-artifacts/verification/{feature}.api.report.json",        contract: "verification-contract@^1.0" }
+
+phases:
+  # ──────────────────────────── PHASE 1: REVIEW + STRATEGY ────────────────────────────
+  - id: 01-input
+    name: "Source Intake (OAS + shared)"
+    agent: spec-analyzer
+    skills: [spec-intake]
+    mcp: [spec-parser-mcp]
+    required_outputs:
+      - "01-input/normalized/*.md"
+      - "01-input/manifest.json"
+    gates: [completeness-gate]
+
+  - id: 02-review
+    name: "OAS Lint + Auth/Limits + Pagination + Patterns + Snapshot"
+    agent: api-spec-reviewer
+    skills: [api-analysis]
+    mcp: [traceability-mcp, rule-analysis-mcp]
+    required_outputs:
+      - "01-review/openapi-quality/lint-findings.md"
+      - "01-review/openapi-quality/lint-findings.json"
+      - "01-review/auth-and-limits/auth-analysis.md"
+      - "01-review/auth-and-limits/rate-limit-analysis.md"
+      - "01-review/pagination-filtering/pagination-review.md"
+      - "01-review/pagination-filtering/filtering-review.md"
+      - "01-review/test-patterns/patterns-review.md"
+      - "01-review/oas-snapshot/oas-snapshot.json"
+      - "01-review/oas-snapshot/oas-snapshot.md"
+    depends_on: [01-input]
+    gates: [completeness-gate, traceability-gate]
+
+  - id: 03-strategy
+    name: "API Strategy"
+    agent: api-strategy-builder
+    mcp: [risk-analysis-mcp, traceability-mcp]
+    required_outputs:
+      - "02-strategy/test-strategy.md"
+      - "02-strategy/performance-collection-reporting.md"
+    depends_on: [02-review]
+    gates: [completeness-gate]
+
+  # ──────────────────────────── PHASE 2: CORE PACK (per-status) ────────────────────────────
+  - id: 04-collection
+    name: "Postman Collection + Per-Status Expansion"
+    agent: api-collection-builder
+    skills: [collection-building]
+    mcp: [traceability-mcp, rule-analysis-mcp]
+    required_outputs:
+      - "05-postman/full-api-collection.json"
+      - "04-traceability/full-api-collection-traceability.md"
+      - "04-traceability/status-code-coverage-matrix.md"
+    depends_on: [03-strategy]
+    gates: [completeness-gate, consistency-gate, quality-depth-gate]
+    timeout_seconds: 2400
+
+  - id: 05-env-data
+    name: "Env Vars + Status-Case Data Samples"
+    agent: api-env-data-builder
+    skills: [env-and-data]
+    mcp: [traceability-mcp]
+    required_outputs:
+      - "06-env/.env.example"
+      - "06-env/environment-variable-contract.md"
+      - "06-env/postman-env.json"
+      - "07-data/200-samples.json"
+      - "07-data/201-samples.json"
+      - "07-data/400-samples.json"
+      - "07-data/401-samples.json"
+      - "07-data/403-samples.json"
+      - "07-data/409-samples.json"
+      - "07-data/429-samples.json"
+      - "04-traceability/data-driven-samples-mapping.md"
+    depends_on: [04-collection]
+    gates: [completeness-gate, consistency-gate]
+
+  # ──────────────────────────── PHASE 3: SCENARIO PACKS ────────────────────────────
+  - id: 06-scenarios
+    name: "E2E + Contract + Integration + Regression Scenarios"
+    agent: api-scenario-builder
+    skills: [scenario-expansion]
+    mcp: [traceability-mcp, risk-analysis-mcp]
+    required_outputs:
+      - "03-scenarios/e2e-journeys/e2e-journeys.md"
+      - "03-scenarios/e2e-journeys/e2e-journeys-mermaid.md"
+      - "03-scenarios/e2e-journeys/e2e-journeys-traceability.md"
+      - "03-scenarios/integration-flows.md"
+      - "03-scenarios/regression-scenarios.md"
+      - "05-postman/e2e-collection.json"
+      - "05-postman/contract-collection.json"
+      - "05-postman/integration-collection.json"
+      - "05-postman/regression-collection.json"
+    depends_on: [05-env-data]
+    gates: [completeness-gate, consistency-gate, traceability-gate]
+
+  # ──────────────────────────── PHASE 4: NON-FUNCTIONAL + VERIFICATION ────────────────────────────
+  - id: 07-performance
+    name: "Performance (k6 / Newman / JMeter)"
+    agent: api-performance-builder
+    skills: [performance-scaffold]
+    mcp: [traceability-mcp]
+    required_outputs:
+      - "09-performance/k6/script.js"
+      - "09-performance/k6/options.json"
+      - "09-performance/newman/runbook.md"
+      - "09-performance/jmeter/base.jmx"
+      - "09-performance/jmeter/README.md"
+      - "09-performance/performance-guidance.md"
+      - "05-postman/performance-collection.json"
+    depends_on: [06-scenarios]
+    gates: [completeness-gate]
+
+  - id: 08-security
+    name: "Security Baseline (ZAP)"
+    agent: api-security-builder
+    mcp: [traceability-mcp]
+    required_outputs:
+      - "09-performance/zap/zap-baseline.yaml"
+      - "09-performance/zap/auth-bootstrap.md"
+      - "09-performance/zap/scope-and-excludes.md"
+      - "09-performance/security-baseline-guidance.md"
+    depends_on: [06-scenarios]
+    gates: [completeness-gate]
+
+  - id: 09-validation
+    name: "Schema + Coupling + Per-Status Validation"
+    validators: [artifact-validator, consistency-validator, completeness-validator, traceability-validator]
+    depends_on: [07-performance, 08-security]
+    required_outputs: []
+    gates: [consistency-gate, quality-depth-gate]
+
+  - id: 10-verification
+    name: "Verifier (raw vs curated reconciliation)"
+    agent: api-report-verifier
+    skills: [verification]
+    mcp: [verification-mcp, traceability-mcp, reporting-mcp, rule-analysis-mcp]
+    required_outputs:
+      - "10-reports/verification/<run-slug>/00_index.md"
+      - "10-reports/verification/<run-slug>/findings.md"
+      - "10-reports/verification/<run-slug>/recommendations.md"
+      - "10-reports/verification/<run-slug>/dashboard.html"
+      - "api-analysis.json"
+      - "api-coverage-matrix.json"
+      - "05-verification/report.md"
+      - "05-verification/report.json"
+    depends_on: [09-validation]
+    gates: [traceability-gate, quality-depth-gate]
+
+  - id: 11-publish
+    name: "Promote to Shared + Output"
+    actor: orchestrator
+    depends_on: [10-verification]
+    required_outputs: []
+
+checkpoint_after: [02-review, 04-collection, 06-scenarios, 10-verification]
+
+recovery_strategies:
+  agent_error: { kind: retry-up-to-n, n: 2 }
+  agent_timeout: { kind: retry-up-to-n, n: 1 }
+  validation_failed: { kind: stop-and-report }
+  gate_failed: { kind: stop-and-report }
+  mcp_unavailable: { kind: retry-with-backoff, max: 3, base_seconds: 10 }
+  agent_low_coverage: { kind: retry-with-altered-prompt, n: 2, alteration: { kind: stricter-evidence } }
+  agent_missing_per_status:
+    kind: retry-with-altered-prompt
+    n: 2
+    alteration: { kind: explicit-per-status }

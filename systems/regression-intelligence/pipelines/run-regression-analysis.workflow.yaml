@@ -1,0 +1,101 @@
+workflow_id: regression-analysis-pipeline@1.0
+system: regression-intelligence
+description: "Change input + upstream artifacts → prioritized regression set"
+
+defaults:
+  default_timeout_seconds: 900
+  hard_timeout_seconds: 5400
+
+inputs:
+  - name: change_input
+    kind: directory
+    path: input/raw-imports/
+    required: true
+
+consumes_shared:
+  - { kind: business-flow,        path_template: "shared-artifacts/business-flows/{feature}.md",     contract: "business-flow-contract@^1.0" }
+  - { kind: system-graph,         path_template: "shared-artifacts/system-graphs/{feature}.json",   contract: "system-graph-contract@^1.0" }
+  - { kind: dependency-map,       path_template: "shared-artifacts/dependency-maps/{feature}.json", contract: "system-graph-contract@^1.0" }
+  - { kind: risks,                path_template: "shared-artifacts/risks/{feature}.json",            contract: "risk-contract@^1.0" }
+  - { kind: api-analysis,         path_template: "shared-artifacts/api-analysis/{feature}.json",    contract: "api-analysis-contract@^1.0" }
+  - { kind: e2e-analysis,         path_template: "shared-artifacts/e2e-analysis/{feature}.json",    contract: "e2e-contract@^1.0" }
+  - { kind: api-scenarios,        path_template: "shared-artifacts/scenarios/{feature}.api.json",   contract: "scenario-contract@^1.0" }
+  - { kind: e2e-scenarios,        path_template: "shared-artifacts/scenarios/{feature}.e2e.json",   contract: "scenario-contract@^1.0" }
+
+produces_shared:
+  - { kind: regression-analysis,    path_template: "shared-artifacts/regression-analysis/{feature}.json",       contract: "regression-contract@^1.0" }
+  - { kind: regression-analysis-md, path_template: "shared-artifacts/regression-analysis/{feature}.md",         contract: "regression-contract@^1.0" }
+  - { kind: regression-diff,        path_template: "shared-artifacts/regression-analysis/{feature}.diff.json",  contract: "regression-contract@^1.0" }
+  - { kind: traceability-matrix,    path_template: "shared-artifacts/traceability/{feature}.regression.matrix.json", contract: "traceability-contract@^1.0" }
+  - { kind: verification-report,    path_template: "shared-artifacts/verification/{feature}.regression.report.json", contract: "verification-contract@^1.0" }
+
+phases:
+  - id: 01-input
+    name: "Load shared inputs + change input"
+    actor: orchestrator
+    required_outputs: []
+
+  - id: 02-changes
+    name: "Parse change input → Change[]"
+    agent: change-analyzer
+    skills: [change-parsing]
+    mcp: [traceability-mcp, regression-analysis-mcp]
+    required_outputs:
+      - "01-changes/changes.json"
+      - "01-changes/changes.md"
+    depends_on: [01-input]
+    gates: [completeness-gate, traceability-gate]
+
+  - id: 03-impact
+    name: "Compute impact map"
+    agent: impact-analyzer
+    skills: [impact-computation]
+    mcp: [dependency-analysis-mcp, regression-analysis-mcp]
+    required_outputs:
+      - "02-impact/impact-map.json"
+      - "02-impact/blast-radius.json"
+    depends_on: [02-changes]
+    gates: [completeness-gate, consistency-gate]
+
+  - id: 04-selection
+    name: "Apply selection rules → regression set"
+    agent: regression-selector
+    skills: [regression-selection]
+    mcp: [traceability-mcp, regression-analysis-mcp]
+    required_outputs:
+      - "03-selection/regression-set.json"
+      - "03-selection/regression-set.md"
+    depends_on: [03-impact]
+    gates: [completeness-gate, consistency-gate]
+
+  - id: 05-validation
+    name: "Schema + cross-artifact consistency"
+    validators: [artifact-validator, consistency-validator, completeness-validator, traceability-validator]
+    depends_on: [04-selection]
+    required_outputs: []
+    gates: [consistency-gate, quality-depth-gate]
+
+  - id: 06-verification
+    name: "Verifier"
+    agent: regression-verifier
+    mcp: [verification-mcp, traceability-mcp]
+    required_outputs:
+      - "05-verification/report.md"
+      - "05-verification/report.json"
+    depends_on: [05-validation]
+    gates: [traceability-gate, quality-depth-gate]
+
+  - id: 07-publish
+    name: "Promote"
+    actor: orchestrator
+    depends_on: [06-verification]
+    required_outputs: []
+
+checkpoint_after: [02-changes, 04-selection, 06-verification]
+
+recovery_strategies:
+  agent_error: { kind: retry-up-to-n, n: 2 }
+  agent_timeout: { kind: retry-up-to-n, n: 1 }
+  validation_failed: { kind: stop-and-report }
+  gate_failed: { kind: stop-and-report }
+  mcp_unavailable: { kind: retry-with-backoff, max: 3, base_seconds: 10 }

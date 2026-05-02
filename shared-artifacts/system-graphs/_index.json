@@ -1,0 +1,15 @@
+{
+  "folder": "shared-artifacts/system-graphs",
+  "kind": "system-graph",
+  "registered_producer": "system-intelligence",
+  "registered_consumers": [
+    "risk-intelligence",
+    "test-strategy-intelligence",
+    "api-testing-intelligence",
+    "e2e-intelligence",
+    "regression-intelligence"
+  ],
+  "contract": "system-graph-contract@^1.0",
+  "retention": { "keep_versions": 5 },
+  "naming": "<feature>.json | <feature>.md | <feature>.diagram.mmd"
+}

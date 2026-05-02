@@ -1,0 +1,18 @@
+{
+  "folder": "shared-artifacts/scenarios",
+  "kind": "scenarios",
+  "producers": [
+    { "system": "business-flow-intelligence", "produces": "<feature>.seed.json" },
+    { "system": "api-testing-intelligence",   "produces": "<feature>.api.json" },
+    { "system": "e2e-intelligence",            "produces": "<feature>.e2e.json" }
+  ],
+  "registered_consumers": [
+    "api-testing-intelligence",
+    "e2e-intelligence",
+    "regression-intelligence",
+    "reporting-mcp"
+  ],
+  "contract": "scenario-contract@^1.0",
+  "retention": { "keep_versions": 5 },
+  "note": "Multiple producers per kind is allowed here because each producer writes a different filename suffix (.seed / .api / .e2e). The single-producer rule applies per filename pattern."
+}

@@ -1,0 +1,10 @@
+{
+  "folder": "shared-artifacts/reports",
+  "kind": "executive-report",
+  "registered_producer": "reporting-mcp",
+  "registered_consumers": ["external", "audit"],
+  "contract": null,
+  "retention": { "keep_versions": 10 },
+  "naming": "<run-id>/INDEX.md, REPORT.md, dashboard.html",
+  "note": "Cross-system executive views. Built by reporting-mcp at orchestrator publish time."
+}

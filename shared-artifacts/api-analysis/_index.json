@@ -1,0 +1,13 @@
+{
+  "folder": "shared-artifacts/api-analysis",
+  "kind": "api-analysis",
+  "registered_producer": "api-testing-intelligence",
+  "registered_consumers": [
+    "e2e-intelligence",
+    "regression-intelligence",
+    "reporting-mcp"
+  ],
+  "contract": "api-analysis-contract@^1.0",
+  "retention": { "keep_versions": 5 },
+  "naming": "<feature>.json | <feature>.md | <feature>.coverage-matrix.json | <feature>.oas-snapshot.json | <feature>.review-findings.json"
+}
